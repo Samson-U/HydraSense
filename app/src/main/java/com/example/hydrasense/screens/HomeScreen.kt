@@ -1,5 +1,8 @@
 package com.example.hydrasense.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,10 +12,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,10 +28,9 @@ import com.example.hydrasense.SafeColor
 import com.example.hydrasense.SafetyStatus
 import com.example.hydrasense.WaterReport
 import com.example.hydrasense.dummyReports
-import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
@@ -36,7 +39,6 @@ import com.google.maps.android.compose.rememberCameraPositionState
 @Composable
 fun HomeScreen(navController: NavController, openDrawer: () -> Unit) {
     Scaffold(
-        // ✅ FIXED: Restored your custom TopBar
         topBar = { TopBar(openDrawer) },
         floatingActionButton = {
             AddReportFab {
@@ -80,14 +82,44 @@ private fun TopBar(openDrawer: () -> Unit) {
 
 @Composable
 private fun WaterSourcesMap() {
-    // Define locations for the map markers
-    val centralPark = LatLng(40.785091, -73.968285)
-    val hudsonRiver = LatLng(40.7489, -74.0094)
-    val brooklynFountain = LatLng(40.7000, -73.9920)
+    val context = LocalContext.current
+    var deviceLocation by remember { mutableStateOf<LatLng?>(null) }
 
-    // Set the initial camera position
+    // Set a default camera position (Chennai)
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(centralPark, 11f)
+        position = CameraPosition.fromLatLngZoom(LatLng(13.0827, 80.2707), 10f)
+    }
+
+    val fusedLocationProviderClient = remember {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) ||
+            permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false)
+        ) {
+            try {
+                fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        deviceLocation = LatLng(location.latitude, location.longitude)
+                        cameraPositionState.position = CameraPosition.fromLatLngZoom(deviceLocation!!, 14f)
+                    }
+                }
+            } catch (e: SecurityException) {
+                // Handle security exception
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
     }
 
     Card(
@@ -98,21 +130,18 @@ private fun WaterSourcesMap() {
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        // ✅ FIXED: The GoogleMap should be the main content of the Card
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState
         ) {
-            Marker(state = MarkerState(position = centralPark), title = "Central Park Lake")
-            Marker(state = MarkerState(position = hudsonRiver), title = "Hudson River - Pier 45")
-            Marker(state = MarkerState(position = brooklynFountain), title = "Brooklyn Bridge Fountain")
+            deviceLocation?.let {
+                Marker(
+                    state = MarkerState(position = it),
+                    title = "Your Location"
+                )
+            }
         }
     }
-}
-
-@Composable
-fun LatLng(x0: Double, x1: Double) {
-    TODO("Not yet implemented")
 }
 
 

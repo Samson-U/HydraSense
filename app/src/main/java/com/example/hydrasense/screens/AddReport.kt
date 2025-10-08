@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.hydrasense.ui.theme.HydraSenseTheme
 import com.google.firebase.auth.ktx.auth
@@ -123,7 +124,7 @@ fun ReportWaterSourceScreen(onNavigateBack: () -> Unit) {
             // Sliders
             InfoSlider("pH Level", Icons.Default.Science, phLevel, { phLevel = it }, 0f..14f, 13, "Acidic (0)", "Neutral (7)", "Basic (14)", "0.0")
             Spacer(Modifier.height(24.dp))
-            InfoSlider("Turbidity", Icons.Default.WaterDrop, turbidity, { turbidity = it }, 0f..100f, 99, "Clear (0)", "Moderate (50)", "Cloudy (100)", unit = " NTU")
+            InfoSlider("Turbidity", Icons.Default.WaterDrop, turbidity, { turbidity = it }, 0f..10f, 9, "Clear (0)", "Moderate (5)", "Cloudy (10)", unit = " NTU")
             Spacer(Modifier.height(24.dp))
             InfoSlider("Temperature", Icons.Default.Thermostat, temperature, { temperature = it }, 0f..40f, 39, "Cold (0°C)", "Room (20°C)", "Hot (40°C)", unit = "°C")
 
@@ -238,10 +239,10 @@ private fun InfoSlider(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, device = "id:pixel_6") // Added a device for better previewing
 @Composable
 fun ReportWaterSourceScreenPreview() {
     HydraSenseTheme {
-        ReportWaterSourceScreen(onNavigateBack = {})
+        ReportWaterSourceScreen(onNavigateBack = {}) // ✅ Correct: Passes an empty function
     }
 }

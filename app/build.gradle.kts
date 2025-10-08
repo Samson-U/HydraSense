@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    // Added from your first file to support Firebase services
     id("com.google.gms.google-services")
 }
 
@@ -14,12 +13,10 @@ android {
 
     defaultConfig {
         applicationId = "com.example.hydrasense"
-        // Using minSdk 26 for broader device compatibility from your first file
         minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -50,27 +47,33 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0") // For ViewModels
 
     // --- Jetpack Compose ---
-    // BOM (Bill of Materials) manages versions for consistent Compose libraries
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    // Added for a wider range of Material icons
-    implementation("androidx.compose.material:material-icons-extended:1.6.7") // Updated to latest stable version
+    implementation("androidx.compose.material:material-icons-extended:1.6.7")
 
     // --- Navigation ---
-    // Using the newer version 2.8.2 from your first file
-    implementation("androidx.navigation:navigation-compose:2.8.2")
+    implementation("androidx.navigation:navigation-compose:2.7.7") // Using latest stable version
 
     // --- Firebase ---
-    // Added from your first file
-    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.1.1")) // Using latest stable BOM
     implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-auth")
-    implementation(libs.play.services.maps)
+    // ✅ FIXED: Added the required KTX libraries
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+
+    // --- Google Maps ---
+    // ✅ FIXED: Using the single, correct dependency for Maps in Compose
+    implementation("com.google.maps.android:maps-compose:4.4.1")
+    // (Optional) Location services if you plan to show user’s location
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
 
     // --- Testing ---
     testImplementation(libs.junit)
@@ -82,14 +85,4 @@ dependencies {
     // --- Debugging & Tooling ---
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    // Google Maps Compose
-    implementation("com.google.maps.android:maps-compose:2.11.4")
-
-// Google Play services Maps SDK
-    implementation("com.google.android.gms:play-services-maps:19.0.0")
-
-// (Optional) Location services if you plan to show user’s location
-    implementation("com.google.android.gms:play-services-location:21.3.0")
-
 }
