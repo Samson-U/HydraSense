@@ -22,36 +22,39 @@ import com.example.hydrasense.AppDestinations
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun LoginScreen(auth: FirebaseAuth, navController: NavController) {
+fun SignUpScreen(auth: FirebaseAuth, navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val buttonColor = Color(0xFF03A9F4)
 
-    val loginButtonColor = Color(0xFF03A9F4)
-
-    // ✅ Explicitly define lambda type
-    val onLoginClick: () -> Unit = {
-        if (email.isNotEmpty() && password.isNotEmpty()) {
-            isLoading = true
-            auth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    isLoading = false
-                    if (task.isSuccessful) {
-                        Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT).show()
-                        navController.navigate(AppDestinations.HOME_ROUTE) {
-                            popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+    val onSignUpClick: () -> Unit = {
+        if (email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()) {
+            if (password == confirmPassword) {
+                isLoading = true
+                auth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener { task ->
+                        isLoading = false
+                        if (task.isSuccessful) {
+                            Toast.makeText(context, "Sign Up Successful!", Toast.LENGTH_SHORT).show()
+                            navController.navigate(AppDestinations.HOME_ROUTE) {
+                                popUpTo(AppDestinations.SIGNUP_ROUTE) { inclusive = true }
+                            }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Sign Up Failed: ${task.exception?.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
-                    } else {
-                        Toast.makeText(
-                            context,
-                            "Login Failed: ${task.exception?.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
                     }
-                }
+            } else {
+                Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+            }
         } else {
-            Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -63,24 +66,16 @@ fun LoginScreen(auth: FirebaseAuth, navController: NavController) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "HydraSense",
-            fontSize = 36.sp,
+            text = "Create Account",
+            fontSize = 32.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = loginButtonColor,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-
-        Text(
-            text = "Track water quality in real-time",
-            fontSize = 16.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(bottom = 48.dp)
+            color = buttonColor,
+            modifier = Modifier.padding(bottom = 32.dp)
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
@@ -89,62 +84,48 @@ fun LoginScreen(auth: FirebaseAuth, navController: NavController) {
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Login",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 32.dp),
-                    color = Color.Black
-                )
-
-                Text(
-                    text = "Email",
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(bottom = 4.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Enter your email") },
+                    label = { Text("Email") },
                     leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = "Password",
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(bottom = 4.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Enter your password") },
+                    label = { Text("Password") },
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                     visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text("Confirm Password") },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = onLoginClick,
+                    onClick = onSignUpClick,
                     enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = loginButtonColor),
+                    colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     if (isLoading) {
@@ -154,7 +135,7 @@ fun LoginScreen(auth: FirebaseAuth, navController: NavController) {
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Login", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Sign Up", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -164,13 +145,13 @@ fun LoginScreen(auth: FirebaseAuth, navController: NavController) {
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Don't have an account? ")
+                    Text("Already have an account? ")
                     Text(
-                        text = "Sign up",
+                        text = "Login",
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.clickable {
-                            navController.navigate(AppDestinations.SIGNUP_ROUTE)
+                            navController.navigate(AppDestinations.LOGIN_ROUTE)
                         }
                     )
                 }
