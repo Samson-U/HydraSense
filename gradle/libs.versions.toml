@@ -9,13 +9,14 @@ lifecycleRuntimeKtx = "2.9.3"
 activityCompose = "1.11.0"
 composeBom = "2024.09.00"
 navigationRuntimeAndroid = "2.9.5"
+navigationCompose = "2.8.2"
 googleGmsServices = "4.4.2"
-firebaseBom = "33.1.2"             # Added from first file
-firebaseAuth = "24.0.1"            # Added from first file
+firebaseBom = "33.1.2"             # Unified from both branches
+firebaseAuth = "24.0.1"
 credentials = "1.5.0"
 credentialsPlayServicesAuth = "1.5.0"
 googleid = "1.1.1"
-playServicesMaps = "19.2.0"        # Added from second file
+playServicesMaps = "19.2.0"        # From new branch
 
 [libraries]
 # Core & testing

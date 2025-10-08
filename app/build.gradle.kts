@@ -10,11 +10,12 @@ plugins {
 android {
     namespace = "com.example.hydrasense"
     compileSdk = 36
+    // Use stable SDK version
 
     defaultConfig {
         applicationId = "com.example.hydrasense"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 36 // Align with compileSdk
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
