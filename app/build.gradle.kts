@@ -81,4 +81,14 @@ dependencies {
     // --- Debugging & Tooling ---
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Google Maps Compose
+    implementation("com.google.maps.android:maps-compose:2.11.4")
+
+// Google Play services Maps SDK
+    implementation("com.google.android.gms:play-services-maps:19.0.0")
+
+// (Optional) Location services if you plan to show user’s location
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
 }

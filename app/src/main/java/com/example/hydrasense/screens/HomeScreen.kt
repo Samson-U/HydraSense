@@ -2,7 +2,6 @@ package com.example.hydrasense.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -13,24 +12,30 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.hydrasense.AppDestinations
 import com.example.hydrasense.BackgroundColor
 import com.example.hydrasense.PollutedColor
 import com.example.hydrasense.SafeColor
 import com.example.hydrasense.SafetyStatus
 import com.example.hydrasense.WaterReport
 import com.example.hydrasense.dummyReports
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
 fun HomeScreen(navController: NavController, openDrawer: () -> Unit) {
     Scaffold(
+        // ✅ FIXED: Restored your custom TopBar
         topBar = { TopBar(openDrawer) },
-        // This is the important part 👇
         floatingActionButton = {
             AddReportFab {
                 navController.navigate(AppDestinations.NEW_REPORT_ROUTE)
@@ -73,30 +78,38 @@ private fun TopBar(openDrawer: () -> Unit) {
 
 @Composable
 private fun WaterSourcesMap() {
+    // Define locations for the map markers
+    val centralPark = LatLng(40.785091, -73.968285)
+    val hudsonRiver = LatLng(40.7489, -74.0094)
+    val brooklynFountain = LatLng(40.7000, -73.9920)
+
+    // Set the initial camera position
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(centralPark, 11f)
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().height(280.dp).padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(280.dp)
+            .padding(16.dp),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Color.White).padding(16.dp)
+        // ✅ FIXED: The GoogleMap should be the main content of the Card
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState
         ) {
-            // Simulated Map View
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFF5F5F5))
-                    .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
-            )
-            Column(modifier = Modifier.align(Alignment.TopStart)) {
-                Text("Water Sources Map", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
-                Text("Interactive Map View", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            }
+            Marker(state = MarkerState(position = centralPark), title = "Central Park Lake")
+            Marker(state = MarkerState(position = hudsonRiver), title = "Hudson River - Pier 45")
+            Marker(state = MarkerState(position = brooklynFountain), title = "Brooklyn Bridge Fountain")
         }
     }
 }
+
+
+// --- The rest of your file is correct and doesn't need changes ---
 
 @Composable
 private fun SummaryCardsRow() {
@@ -118,7 +131,9 @@ private fun SummaryCard(title: String, value: String, color: Color, modifier: Mo
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(12.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
