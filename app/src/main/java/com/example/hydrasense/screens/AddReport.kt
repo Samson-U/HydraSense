@@ -1,5 +1,9 @@
 package com.example.hydrasense.screens
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,36 +12,47 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Science
-import androidx.compose.material.icons.filled.Thermostat
-import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.hydrasense.ui.theme.HydraSenseTheme
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import java.text.DecimalFormat
 
-// A custom green color to match the submit button in the image
 val SubmitGreen = Color(0xFF34A853)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportWaterSourceScreen(onNavigateBack: () -> Unit) {
-    // State variables for all the input fields
+    val context = LocalContext.current
+
+    // Input states
     var waterSourceName by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-    var phLevel by remember { mutableStateOf(7.0f) }
+    var latitude by remember { mutableStateOf(0.0) }
+    var longitude by remember { mutableStateOf(0.0) }
+    var phLevel by remember { mutableStateOf(7f) }
     var turbidity by remember { mutableStateOf(5f) }
     var temperature by remember { mutableStateOf(20f) }
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Photo picker launcher
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        photoUri = uri
+    }
 
     Scaffold(
         topBar = {
@@ -47,11 +62,7 @@ fun ReportWaterSourceScreen(onNavigateBack: () -> Unit) {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         }
     ) { paddingValues ->
@@ -79,17 +90,28 @@ fun ReportWaterSourceScreen(onNavigateBack: () -> Unit) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Location Input
-            OutlinedTextField(
-                value = location,
-                onValueChange = { location = it },
-                label = { Text("Location") },
-                placeholder = { Text("Enter location or coordinates") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Location input
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = if (latitude != 0.0) latitude.toString() else "",
+                    onValueChange = { latitude = it.toDoubleOrNull() ?: 0.0 },
+                    label = { Text("Latitude") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = if (longitude != 0.0) longitude.toString() else "",
+                    onValueChange = { longitude = it.toDoubleOrNull() ?: 0.0 },
+                    label = { Text("Longitude") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
-                onClick = { /* TODO: Auto-detect location logic */ },
+                onClick = {
+                    // TODO: Add FusedLocationProviderClient to auto-detect GPS
+                    Toast.makeText(context, "Auto-detect location not implemented yet", Toast.LENGTH_SHORT).show()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -99,84 +121,84 @@ fun ReportWaterSourceScreen(onNavigateBack: () -> Unit) {
 
             Spacer(Modifier.height(24.dp))
 
-            // Sliders for water quality parameters
-            InfoSlider(
-                label = "pH Level",
-                icon = Icons.Default.Science,
-                value = phLevel,
-                onValueChange = { phLevel = it },
-                valueRange = 0f..14f,
-                steps = 13, // 14 steps (0 to 14) means 13 divisions
-                startLabel = "Acidic (0)",
-                midLabel = "Neutral (7)",
-                endLabel = "Basic (14)",
-                valueFormat = "0.0"
-            )
+            // Sliders
+            InfoSlider("pH Level", Icons.Default.Science, phLevel, { phLevel = it }, 0f..14f, 13, "Acidic (0)", "Neutral (7)", "Basic (14)", "0.0")
+            Spacer(Modifier.height(24.dp))
+            InfoSlider("Turbidity", Icons.Default.WaterDrop, turbidity, { turbidity = it }, 0f..10f, 9, "Clear (0)", "Moderate (5)", "Cloudy (10)", unit = " NTU")
+            Spacer(Modifier.height(24.dp))
+            InfoSlider("Temperature", Icons.Default.Thermostat, temperature, { temperature = it }, 0f..40f, 39, "Cold (0°C)", "Room (20°C)", "Hot (40°C)", unit = "°C")
 
             Spacer(Modifier.height(24.dp))
 
-            InfoSlider(
-                label = "Turbidity",
-                icon = Icons.Default.WaterDrop,
-                value = turbidity,
-                onValueChange = { turbidity = it },
-                valueRange = 0f..100f,
-                steps = 99,
-                startLabel = "Clear (0)",
-                midLabel = "Moderate (50)",
-                endLabel = "Cloudy (100)",
-                unit = " NTU"
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            InfoSlider(
-                label = "Temperature",
-                icon = Icons.Default.Thermostat,
-                value = temperature,
-                onValueChange = { temperature = it },
-                valueRange = 0f..40f,
-                steps = 39,
-                startLabel = "Cold (0°C)",
-                midLabel = "Room (20°C)",
-                endLabel = "Hot (40°C)",
-                unit = "°C"
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // Photo Attachment
-            Text("Photo (Optional)", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // Photo picker
+            Text("Photo (Optional)", style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(8.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
                     .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
-                    .clickable { /* TODO: Photo picker logic */ }
+                    .clickable { photoPickerLauncher.launch("image/*") }
                     .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Default.CameraAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
-                Text("Attach Photo", color = MaterialTheme.colorScheme.primary)
+                Text(if (photoUri != null) "Photo Selected" else "Attach Photo", color = MaterialTheme.colorScheme.primary)
             }
 
             Spacer(Modifier.height(32.dp))
 
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onNavigateBack,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Cancel")
-                }
+            // Buttons
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedButton(onClick = onNavigateBack, modifier = Modifier.weight(1f)) { Text("Cancel") }
                 Button(
-                    onClick = { /* TODO: Submit report logic */ },
+                    onClick = {
+                        val userId = Firebase.auth.currentUser?.uid ?: "anonymous"
+
+                        fun saveReport(photoUrl: String) {
+                            val reportData = hashMapOf(
+                                "UserId" to userId,
+                                "WaterSourceName" to waterSourceName,
+                                "Location" to mapOf("latitude" to latitude, "longitude" to longitude),
+                                "ph" to phLevel,
+                                "turbidity" to turbidity,
+                                "temperature" to temperature,
+                                "imageProof" to photoUrl
+                            )
+                            Firebase.firestore.collection("WaterSources")
+                                .add(reportData)
+                                .addOnSuccessListener {
+                                    Toast.makeText(context, "Report submitted!", Toast.LENGTH_SHORT).show()
+                                    // Reset fields
+                                    waterSourceName = ""
+                                    latitude = 0.0
+                                    longitude = 0.0
+                                    phLevel = 7f
+                                    turbidity = 5f
+                                    temperature = 20f
+                                    photoUri = null
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+
+                        if (photoUri != null) {
+                            val storageRef = Firebase.storage.reference.child("images/${System.currentTimeMillis()}.jpg")
+                            storageRef.putFile(photoUri!!)
+                                .addOnSuccessListener {
+                                    storageRef.downloadUrl.addOnSuccessListener { uri ->
+                                        saveReport(uri.toString())
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(context, "Photo upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        } else {
+                            saveReport("")
+                        }
+                    },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = SubmitGreen)
                 ) {
@@ -187,9 +209,6 @@ fun ReportWaterSourceScreen(onNavigateBack: () -> Unit) {
     }
 }
 
-/**
- * A reusable Composable for the labeled sliders with icons and range labels.
- */
 @Composable
 private fun InfoSlider(
     label: String,
@@ -199,45 +218,31 @@ private fun InfoSlider(
     valueRange: ClosedFloatingPointRange<Float>,
     steps: Int,
     startLabel: String,
-    midLabel: String?,
+    midLabel: String? = null,
     endLabel: String,
     valueFormat: String = "0",
     unit: String = ""
 ) {
     val decimalFormat = remember(valueFormat) { DecimalFormat(valueFormat) }
-
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(8.dp))
-            Text(
-                text = "$label: ${decimalFormat.format(value)}$unit",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
+            Text("$label: ${decimalFormat.format(value)}$unit", fontWeight = FontWeight.Medium)
         }
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
-            steps = steps,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Slider(value = value, onValueChange = onValueChange, valueRange = valueRange, steps = steps, modifier = Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth()) {
-            Text(startLabel, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Start, modifier = Modifier.weight(1f))
-            if (midLabel != null) {
-                Text(midLabel, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-            }
-            Text(endLabel, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+            Text(startLabel, modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
+            if (midLabel != null) Text(midLabel, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+            Text(endLabel, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
         }
     }
 }
 
-
-@Preview(showBackground = true, device = "id:pixel_6")
+@Preview(showBackground = true, device = "id:pixel_6") // Added a device for better previewing
 @Composable
 fun ReportWaterSourceScreenPreview() {
     HydraSenseTheme {
-        ReportWaterSourceScreen(onNavigateBack = {})
+        ReportWaterSourceScreen(onNavigateBack = {}) // ✅ Correct: Passes an empty function
     }
 }

@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.gms.google.services) // Use the alias
+    alias(libs.plugins.google.gms.google.services) // Using alias from TOML
 }
 
 android {
@@ -30,13 +30,16 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
     }
@@ -47,6 +50,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0") // ViewModels
 
     // --- Jetpack Compose ---
     implementation(platform(libs.androidx.compose.bom))
@@ -54,22 +58,27 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    // Consider moving this to your version catalog (libs.versions.toml)
     implementation("androidx.compose.material:material-icons-extended:1.6.7")
 
     // --- Navigation ---
-    // Assuming you moved this to libs.versions.toml
     implementation("androidx.navigation:navigation-compose:2.8.2")
 
     // --- Firebase ---
     implementation(platform(libs.firebase.bom))
     implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-auth-ktx") // Preferred way to add auth
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
 
-    // --- Google Identity & Credentials (for One Tap Sign-In) ---
+    // --- Google Identity & Credentials (One Tap Sign-In) ---
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+
+    // --- Google Maps & Location ---
+    implementation("com.google.maps.android:maps-compose:4.4.1")
+    implementation("com.google.android.gms:play-services-maps:19.2.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // --- Testing ---
     testImplementation(libs.junit)

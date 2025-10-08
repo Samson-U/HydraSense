@@ -1,8 +1,10 @@
 package com.example.hydrasense.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -10,27 +12,34 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.hydrasense.AppDestinations
 import com.example.hydrasense.BackgroundColor
 import com.example.hydrasense.PollutedColor
 import com.example.hydrasense.SafeColor
 import com.example.hydrasense.SafetyStatus
 import com.example.hydrasense.WaterReport
 import com.example.hydrasense.dummyReports
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
 fun HomeScreen(navController: NavController, openDrawer: () -> Unit) {
     Scaffold(
         topBar = { TopBar(openDrawer) },
-        // This is the important part 👇
         floatingActionButton = {
             AddReportFab {
                 navController.navigate(AppDestinations.NEW_REPORT_ROUTE)
@@ -73,30 +82,70 @@ private fun TopBar(openDrawer: () -> Unit) {
 
 @Composable
 private fun WaterSourcesMap() {
+    val context = LocalContext.current
+    var deviceLocation by remember { mutableStateOf<LatLng?>(null) }
+
+    // Set a default camera position (Chennai)
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(LatLng(13.0827, 80.2707), 10f)
+    }
+
+    val fusedLocationProviderClient = remember {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) ||
+            permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false)
+        ) {
+            try {
+                fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        deviceLocation = LatLng(location.latitude, location.longitude)
+                        cameraPositionState.position = CameraPosition.fromLatLngZoom(deviceLocation!!, 14f)
+                    }
+                }
+            } catch (e: SecurityException) {
+                // Handle security exception
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().height(280.dp).padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(280.dp)
+            .padding(16.dp),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Color.White).padding(16.dp)
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState
         ) {
-            // Simulated Map View
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFF5F5F5))
-                    .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
-            )
-            Column(modifier = Modifier.align(Alignment.TopStart)) {
-                Text("Water Sources Map", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
-                Text("Interactive Map View", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            deviceLocation?.let {
+                Marker(
+                    state = MarkerState(position = it),
+                    title = "Your Location"
+                )
             }
         }
     }
 }
+
+
+// --- The rest of your file is correct and doesn't need changes ---
 
 @Composable
 private fun SummaryCardsRow() {
@@ -118,7 +167,9 @@ private fun SummaryCard(title: String, value: String, color: Color, modifier: Mo
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(12.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
