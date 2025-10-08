@@ -24,8 +24,10 @@ import com.example.hydrasense.SafeColor
 import com.example.hydrasense.SafetyStatus
 import com.example.hydrasense.WaterReport
 import com.example.hydrasense.dummyReports
+import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
@@ -106,6 +108,11 @@ private fun WaterSourcesMap() {
             Marker(state = MarkerState(position = brooklynFountain), title = "Brooklyn Bridge Fountain")
         }
     }
+}
+
+@Composable
+fun LatLng(x0: Double, x1: Double) {
+    TODO("Not yet implemented")
 }
 
 

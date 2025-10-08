@@ -70,6 +70,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
+    implementation(libs.play.services.maps)
 
     // --- Testing ---
     testImplementation(libs.junit)
